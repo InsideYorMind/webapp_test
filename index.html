@@ -5,16 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, shrink-to-fit=no">
     <title>Супер Тест Web App</title>
     <style>
-        body { font-family: sans-serif; padding: 15px; margin: 0; background-color: var(--tg-theme-bg-color, #fff); color: var(--tg-theme-text-color, #000); }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            padding: 15px;
+            margin: 0;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            box-sizing: border-box;
+            overscroll-behavior: none; /* Предотвращает "оттягивание" страницы */
+        }
         .container { display: flex; flex-direction: column; gap: 15px; }
         label { font-weight: bold; display: block; margin-bottom: 5px; }
-        input[type="text"] { width: 100%; padding: 10px; border: 1px solid var(--tg-theme-hint-color, #ccc); border-radius: 5px; font-size: 16px; box-sizing: border-box; }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--tg-theme-hint-color, #cccccc);
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            color: var(--tg-theme-text-color, #000000);
+        }
         #log-container { margin-top: 15px; }
-        #log { padding: 10px; border: 1px dashed var(--tg-theme-hint-color, #ddd); border-radius: 5px; font-size: 11px; max-height: 200px; overflow-y: auto; word-break: break-all; background-color: var(--tg-theme-secondary-bg-color, #f0f0f0); }
-        #log p { margin: 2px 0; padding-bottom: 2px; border-bottom: 1px solid var(--tg-theme-hint-color, #eee); }
-        #log p.error { color: red; font-weight: bold; }
-        #log p.success { color: green; font-weight: bold; }
-        #log p.info { color: blue; }
+        #log {
+            padding: 10px;
+            border: 1px dashed var(--tg-theme-hint-color, #dddddd);
+            border-radius: 5px;
+            font-size: 11px;
+            max-height: 250px; /* Увеличил немного высоту */
+            overflow-y: auto;
+            word-break: break-all;
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            color: var(--tg-theme-text-color, #000000); /* Добавил цвет текста для лога */
+        }
+        #log p { margin: 2px 0; padding-bottom: 2px; border-bottom: 1px solid var(--tg-theme-hint-color, #eeeeee); }
+        #log p.error { color: var(--tg-theme-destructive-text-color, red); font-weight: bold; }
+        #log p.success { color: green; font-weight: bold; } /* Оставим зеленый для явного успеха */
+        #log p.info { color: var(--tg-theme-accent-text-color, blue); }
     </style>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
@@ -39,25 +66,39 @@
         let logCounter = 1;
 
         function webAppLog(message, type = 'info') {
-            console.log(`[WebApp ${type.toUpperCase()}]`, message);
+            // Лог в консоль разработчика браузера (если доступна)
+            if (type === 'error') console.error(`[WebApp] ${message}`);
+            else if (type === 'success') console.log(`%c[WebApp] ${message}`, 'color: green;');
+            else console.log(`[WebApp] ${message}`);
+
+            // Лог на страницу
             const p = document.createElement('p');
             p.className = type;
-            p.textContent = `${logCounter++}. [${new Date().toLocaleTimeString()}] ${message}`;
-            logDiv.appendChild(p);
-            logDiv.scrollTop = logDiv.scrollHeight;
+            const time = new Date();
+            // Форматируем время, чтобы было проще читать
+            const timeString = `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}:${String(time.getSeconds()).padStart(2, '0')}.${String(time.getMilliseconds()).padStart(3, '0')}`;
+            p.textContent = `${logCounter++}. [${timeString}] ${message}`;
+            if (logDiv) {
+                logDiv.appendChild(p);
+                logDiv.scrollTop = logDiv.scrollHeight; // Автопрокрутка вниз
+            }
         }
 
-        webAppLog("--- Web App скрипт запущен ---");
+        // --- Начало работы скрипта ---
+        webAppLog("--- Web App скрипт v1.1 запущен ---", 'info');
 
         if (typeof Telegram === 'undefined' || !Telegram.WebApp) {
             webAppLog("ОШИБКА КРИТИЧЕСКАЯ: Объект Telegram или Telegram.WebApp НЕ определен!", 'error');
-            alert("Критическая ошибка: Telegram SDK не загружен. Пожалуйста, сообщите разработчику.");
+            alert("Критическая ошибка: Telegram SDK не загружен. Пожалуйста, сообщите разработчику или проверьте соединение.");
         } else {
             webAppLog("Объект Telegram.WebApp определен.", 'success');
-            webAppLog(`Версия SDK: ${tg.version}`);
-            webAppLog(`Платформа: ${tg.platform}`);
-            webAppLog(`Цветовая схема: ${tg.colorScheme}`);
-            webAppLog(`initDataUnsafe: ${JSON.stringify(tg.initDataUnsafe)}`);
+            webAppLog(`Версия SDK: ${tg.version || 'не определена'}`, 'info');
+            webAppLog(`Платформа: ${tg.platform || 'не определена'}`, 'info');
+            webAppLog(`Цветовая схема: ${tg.colorScheme || 'не определена'}`, 'info');
+            webAppLog(`initData: ${tg.initData ? 'присутствует (длина ' + tg.initData.length + ')' : 'ОТСУТСТВУЕТ!'}`, tg.initData ? 'info' : 'error');
+            webAppLog(`initDataUnsafe: ${JSON.stringify(tg.initDataUnsafe) || '{}'}`, 'info');
+            webAppLog(`Текущее время клиента (new Date().toISOString()): ${new Date().toISOString()}`, 'info');
+
 
             tg.ready();
             webAppLog("tg.ready() вызван.", 'success');
@@ -65,74 +106,101 @@
             tg.expand();
             webAppLog("tg.expand() вызван.", 'success');
 
+            // Настройка MainButton
             tg.MainButton.setText("Отправить Текст");
-            tg.MainButton.color = tg.themeParams.button_color || "#2481CC";
+            tg.MainButton.color = tg.themeParams.button_color || "#2481CC"; // Используем цвет из темы или дефолтный
             tg.MainButton.textColor = tg.themeParams.button_text_color || "#FFFFFF";
-            webAppLog("MainButton настроена.", 'success');
+            webAppLog("MainButton настроена (текст, цвет).", 'success');
 
             const dataField = document.getElementById('dataField');
 
-            dataField.addEventListener('input', function() {
+            // Показываем/скрываем MainButton и делаем ее активной/неактивной
+            function updateMainButtonVisibility() {
                 if (dataField.value.trim().length > 0) {
-                    if (!tg.MainButton.isVisible) tg.MainButton.show();
-                    if (!tg.MainButton.isActive) tg.MainButton.enable();
+                    if (!tg.MainButton.isVisible) {
+                        tg.MainButton.show();
+                        webAppLog("MainButton ПОКАЗАНА (текст введен).", 'info');
+                    }
+                    if (!tg.MainButton.isActive) {
+                         tg.MainButton.enable();
+                         webAppLog("MainButton АКТИВИРОВАНА.", 'info');
+                    }
                 } else {
-                    if (tg.MainButton.isVisible) tg.MainButton.hide();
+                    if (tg.MainButton.isVisible) {
+                        tg.MainButton.hide();
+                        webAppLog("MainButton СКРЫТА (текст пуст).", 'info');
+                    }
+                    // Неактивной делать не обязательно, если скрыта
                 }
-            });
+            }
 
-            tg.MainButton.hide(); // Скрыта по умолчанию
-            webAppLog("MainButton по умолчанию скрыта.");
+            if(dataField) {
+                dataField.addEventListener('input', updateMainButtonVisibility);
+            }
 
+            // Изначально кнопка скрыта и неактивна
+            tg.MainButton.hide();
+            tg.MainButton.disable(); // Явно делаем неактивной при скрытии
+            webAppLog("MainButton по умолчанию СКРЫТА и НЕАКТИВНА.", 'info');
+            updateMainButtonVisibility(); // Проверить состояние при загрузке (если в поле уже есть текст)
+
+
+            // Обработчик нажатия на MainButton
             tg.MainButton.onClick(function() {
                 webAppLog("--- MainButton onClick СРАБОТАЛ ---", 'success');
                 const textValue = dataField.value.trim();
 
                 if (textValue.length === 0) {
                     webAppLog("Попытка отправить пустые данные. Показ showAlert.", 'error');
-                    tg.showAlert("Пожалуйста, введите текст.");
+                    tg.showAlert("Пожалуйста, введите текст для отправки.");
                     return;
                 }
 
                 const dataPayload = {
                     text_message: textValue,
-                    client_timestamp: new Date().toISOString(),
+                    client_timestamp: new Date().toISOString(), // Время отправки с клиента
                     app_version: "1.1"
                 };
                 const jsonPayload = JSON.stringify(dataPayload);
 
                 webAppLog(`Подготовлен JSON для отправки: ${jsonPayload}`, 'info');
 
-                tg.MainButton.showProgress(false); // Показываем жирный индикатор
-                tg.MainButton.disable();
+                tg.MainButton.showProgress(false); // Показываем "жирный" индикатор загрузки
+                tg.MainButton.disable(); // Делаем кнопку неактивной на время "отправки"
                 webAppLog("MainButton.showProgress(false) и disable() вызваны.", 'info');
 
                 webAppLog("--- Сейчас будет вызван tg.sendData() ---", 'info');
                 try {
                     tg.sendData(jsonPayload);
-                    // ЕСЛИ ВЫ ВИДИТЕ ЭТО СООБЩЕНИЕ В ЛОГАХ ВНУТРИ TELEGRAM,
-                    // А БОТ НЕ РЕАГИРУЕТ - ПРОБЛЕМА НЕ В ВЫЗОВЕ sendData, А В ЧЕМ-ТО ЕЩЕ
-                    // (например, неправильные данные initData, которые Telegram не может проверить, или блокировка на стороне Telegram)
                     webAppLog("УСПЕХ: tg.sendData() был вызван БЕЗ ОШИБКИ JavaScript!", 'success');
-                    webAppLog("Ожидайте реакции бота...", 'info');
+                    webAppLog("Ожидайте реакции бота... Если бот молчит, проверьте его логи и initData.", 'info');
 
                     tg.HapticFeedback.notificationOccurred('success');
 
-                    // Не скрываем прогресс сразу, чтобы он был виден
-                    // Скроется, если бот ответит или по таймауту (если нужен)
-                    // Можно поменять текст кнопки
-                    // tg.MainButton.setText("Отправлено, ждем...");
+                    // Изменить текст кнопки, чтобы показать, что что-то произошло
+                    // Не скрываем прогресс сразу, т.к. это может сбить пользователя
+                    // tg.MainButton.setText("Отправлено..."); // Можно изменить текст
+
+                    // Скрыть прогресс и вернуть кнопку в активное состояние через некоторое время
+                    // Это даст пользователю понять, что действие завершено на стороне клиента
+                    setTimeout(() => {
+                        tg.MainButton.hideProgress();
+                        webAppLog("MainButton.hideProgress() вызван (после таймаута).", 'info');
+                        tg.MainButton.setText("Отправить Текст"); // Возвращаем исходный текст
+                        // tg.MainButton.enable(); // Снова активируем, если нужно (зависит от updateMainButtonVisibility)
+                        updateMainButtonVisibility(); // Обновить состояние кнопки
+                    }, 1500); // 1.5 секунды
 
                 } catch (e) {
                     webAppLog(`КРИТИЧЕСКАЯ ОШИБКА при вызове tg.sendData(): ${e.toString()}`, 'error');
-                    tg.showAlert(`Ошибка JS при отправке: ${e.toString()}`);
+                    if (tg.showAlert) tg.showAlert(`Ошибка JS при отправке: ${e.message || e.toString()}`);
                     tg.MainButton.hideProgress();
-                    tg.MainButton.enable();
+                    // tg.MainButton.enable();
+                    updateMainButtonVisibility(); // Обновить состояние кнопки
                 }
                 webAppLog("--- обработчик onClick завершен ---", 'info');
             });
         }
         webAppLog("--- Загрузка скрипта Web App полностью завершена ---", 'success');
-    </script>
-</body>
+    </script></body>
 </html>
