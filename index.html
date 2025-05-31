@@ -2,188 +2,191 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Настройка Фильтров</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <title>Простой Web App</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            padding: 20px;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            padding: 15px;
             margin: 0;
             background-color: var(--tg-theme-bg-color, #ffffff);
             color: var(--tg-theme-text-color, #000000);
             box-sizing: border-box;
+            overscroll-behavior: none; /* Предотвращает "оттягивание" страницы на мобильных */
         }
         .container {
             display: flex;
             flex-direction: column;
-            gap: 20px;
-        }
-        .filter-group {
-            padding: 15px;
-            border: 1px solid var(--tg-theme-hint-color, #dddddd);
-            border-radius: 8px;
-            background-color: var(--tg-theme-secondary-bg-color, #f9f9f9);
-        }
-        .filter-group h2 {
-            margin-top: 0;
-            font-size: 18px;
-            color: var(--tg-theme-text-color);
+            gap: 15px;
         }
         label {
+            font-weight: bold;
+            margin-bottom: 5px;
             display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
         }
-        input[type="checkbox"] {
-            margin-right: 8px;
-            vertical-align: middle;
-        }
-        select, input[type="text"] {
-            width: 100%; /* Убрал calc, т.к. box-sizing: border-box уже есть */
+        input[type="text"] {
+            width: 100%;
             padding: 10px;
             border: 1px solid var(--tg-theme-hint-color, #cccccc);
             border-radius: 5px;
             font-size: 16px;
-            background-color: var(--tg-theme-bg-color, #ffffff);
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
             color: var(--tg-theme-text-color, #000000);
-            box-sizing: border-box; /* Важно для width: 100% */
+            box-sizing: border-box;
         }
-        #status-message {
-            margin-top: 15px;
+        #log {
+            margin-top: 20px;
             padding: 10px;
+            border: 1px dashed var(--tg-theme-hint-color, #dddddd);
             border-radius: 5px;
-            text-align: center;
-            font-weight: bold;
-            display: none; /* Скрываем по умолчанию */
+            font-size: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+            word-break: break-all;
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
         }
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .error { /* Хотя здесь он не используется, но полезно иметь */
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+        #log p {
+            margin: 2px 0;
+            border-bottom: 1px solid var(--tg-theme-hint-color, #eee);
+            padding-bottom: 2px;
         }
     </style>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>Настройка Фильтров</h1>
+        <h1>Тестовый Web App</h1>
 
-        <div class="filter-group">
-            <h2>Основные фильтры</h2>
-            <div>
-                <input type="checkbox" id="notifications" name="notifications" checked>
-                <label for="notifications" style="display: inline;">Включить уведомления</label>
-            </div>
-            <div>
-                <input type="checkbox" id="showHidden" name="showHidden">
-                <label for="showHidden" style="display: inline;">Показывать скрытые элементы</label>
-            </div>
+        <div>
+            <label for="dataField">Введите текст:</label>
+            <input type="text" id="dataField" placeholder="Любой текст">
         </div>
 
-        <div class="filter-group">
-            <h2>Категория</h2>
-            <label for="category">Выберите категорию:</label>
-            <select id="category" name="category">
-                <option value="all">Все категории</option>
-                <option value="tech">Технологии</option>
-                <option value="news" selected>Новости</option>
-                <option value="sport">Спорт</option>
-            </select>
+        <div id="log-container">
+            <strong>Логи Web App (в браузере):</strong>
+            <div id="log"></div>
         </div>
-
-        <div class="filter-group">
-            <h2>Ключевое слово</h2>
-            <label for="keyword">Введите ключевое слово:</label>
-            <input type="text" id="keyword" name="keyword" placeholder="Например, AI или blockchain">
-        </div>
-
-        <div id="status-message"></div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
+        const logDiv = document.getElementById('log');
 
-        tg.ready();
-        tg.expand();
-
-        const notificationsCheckbox = document.getElementById('notifications');
-        const showHiddenCheckbox = document.getElementById('showHidden');
-        const categorySelect = document.getElementById('category');
-        const keywordInput = document.getElementById('keyword');
-        const statusMessageDiv = document.getElementById('status-message');
-
-        tg.MainButton.setText("Сохранить фильтры");
-        tg.MainButton.color = tg.themeParams.button_color || "#007bff";
-        tg.MainButton.textColor = tg.themeParams.button_text_color || "#ffffff";
-
-        // Показываем и активируем кнопку сразу, так как есть дефолтные значения
-        tg.MainButton.show();
-        tg.MainButton.enable();
-
-
-        function getFiltersData() {
-            return {
-                notifications_enabled: notificationsCheckbox.checked,
-                show_hidden_elements: showHiddenCheckbox.checked,
-                selected_category: categorySelect.value,
-                search_keyword: keywordInput.value.trim()
-            };
+        function webAppLog(message) {
+            console.log("[Web App Log]", message); // Лог в консоль разработчика
+            const p = document.createElement('p');
+            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(p);
+            logDiv.scrollTop = logDiv.scrollHeight; // Автопрокрутка вниз
         }
 
-        tg.MainButton.onClick(() => {
-            // 1. Показать индикатор загрузки (опционально, если процесс быстрый)
-            tg.MainButton.showProgress(false); // true для тонкого индикатора, false для перекрывающего
-            tg.MainButton.disable(); // Отключаем кнопку на время "отправки"
+        webAppLog("Web App инициализация...");
 
-            const filtersData = getFiltersData();
+        if (!tg || !tg.initData) {
+            webAppLog("ОШИБКА: Telegram WebApp SDK (tg) не загружен или initData отсутствует!");
+            // Можно показать пользователю сообщение об ошибке
+            alert("Не удалось инициализировать Telegram Web App. Попробуйте перезапустить.");
+        } else {
+            webAppLog("Telegram SDK (tg) загружен. Версия: " + tg.version);
+            webAppLog("tg.initDataUnsafe: " + JSON.stringify(tg.initDataUnsafe));
+            webAppLog("tg.colorScheme: " + tg.colorScheme);
+            webAppLog("tg.themeParams: " + JSON.stringify(tg.themeParams));
 
-            console.log("Отправка данных:", JSON.stringify(filtersData)); // Для отладки в консоли браузера
+            tg.ready();
+            webAppLog("tg.ready() вызван.");
 
-            // 2. Отправляем данные боту
-            tg.sendData(JSON.stringify(filtersData));
+            tg.expand();
+            webAppLog("tg.expand() вызван.");
 
-            // 3. Показываем сообщение об успехе в WebApp
-            statusMessageDiv.textContent = "Фильтры отправлены!";
-            statusMessageDiv.className = 'success'; // Сбрасить предыдущие классы и добавить success
-            statusMessageDiv.style.display = 'block';
+            // Настройка MainButton
+            tg.MainButton.setText("Отправить данные");
+            webAppLog("MainButton текст установлен: 'Отправить данные'");
+            tg.MainButton.color = tg.themeParams.button_color || "#007AFF";
+            tg.MainButton.textColor = tg.themeParams.button_text_color || "#FFFFFF";
 
-            // 4. Тактильный отклик
-            tg.HapticFeedback.notificationOccurred('success');
+            const dataField = document.getElementById('dataField');
 
-            // 5. Скрыть индикатор прогресса и изменить состояние кнопки
-            // Делаем это с небольшой задержкой, чтобы пользователь успел увидеть сообщение
-            // и чтобы не было слишком резкого перехода.
-            setTimeout(() => {
-                tg.MainButton.hideProgress();
-                // Можно изменить текст кнопки на "Сохранено" и оставить её неактивной
-                // tg.MainButton.setText("Сохранено!");
-                // tg.MainButton.disable(); // Она уже disable, можно оставить так
-                // Или вернуть в исходное состояние, если пользователь может захотеть сохранить еще раз
-                tg.MainButton.setText("Сохранить фильтры");
-                tg.MainButton.enable(); // Снова активируем кнопку
+            // Показываем/скрываем MainButton в зависимости от наличия текста
+            dataField.addEventListener('input', function() {
+                if (dataField.value.trim().length > 0) {
+                    if (!tg.MainButton.isVisible) {
+                        tg.MainButton.show();
+                        webAppLog("MainButton показана (текст введен).");
+                    }
+                    if (!tg.MainButton.isActive) {
+                         tg.MainButton.enable();
+                         webAppLog("MainButton активирована.");
+                    }
+                } else {
+                    if (tg.MainButton.isVisible) {
+                        tg.MainButton.hide();
+                        webAppLog("MainButton скрыта (текст пуст).");
+                    }
+                }
+            });
 
-                // Опционально: скрыть сообщение об успехе через некоторое время
-                setTimeout(() => {
-                    statusMessageDiv.style.display = 'none';
-                }, 2000);
+            // Изначально кнопка скрыта, пока не введен текст
+            tg.MainButton.hide();
+            webAppLog("MainButton изначально скрыта.");
 
+            // Обработчик нажатия на MainButton
+            tg.MainButton.onClick(function() {
+                webAppLog("MainButton нажата.");
+                const textToSend = dataField.value.trim();
 
-                // ВАЖНО: Если вы хотите, чтобы Web App закрылся после сохранения,
-                // раскомментируйте следующую строку. Но убедитесь, что данные точно ушли боту.
-                // Обычно лучше, чтобы бот подтвердил получение и потом, если нужно, Web App закрылся.
-                // Либо пользователь сам закроет.
-                // tg.close();
-            }, 1000); // Задержка в 1 секунду (1000 мс)
-        });
+                if (textToSend.length === 0) {
+                    webAppLog("Попытка отправить пустые данные. Отмена.");
+                    tg.showAlert("Пожалуйста, введите текст для отправки.");
+                    return;
+                }
 
-        console.log("Web App инициализировано. Версия SDK:", tg.version);
-        console.log("InitDataUnsafe:", tg.initDataUnsafe); // Полезно для отладки
+                const dataToSend = {
+                    message: textToSend,
+                    timestamp: new Date().toISOString()
+                };
+                const jsonData = JSON.stringify(dataToSend);
 
+                webAppLog("Подготовлены данные для отправки: " + jsonData);
+
+                tg.MainButton.showProgress(false); // Показываем индикатор загрузки
+                webAppLog("MainButton.showProgress(false) вызван.");
+                tg.MainButton.disable(); // Делаем кнопку неактивной
+                webAppLog("MainButton.disable() вызван.");
+
+                try {
+                    tg.sendData(jsonData);
+                    webAppLog("tg.sendData() успешно вызван с данными: " + jsonData);
+
+                    // Имитация "успешной отправки" на стороне клиента
+                    // Не закрываем сразу, чтобы увидеть реакцию бота
+                    tg.HapticFeedback.notificationOccurred('success');
+                    webAppLog("Тактильный отклик 'success'.");
+
+                    // Скрываем прогресс и меняем кнопку через небольшую задержку
+                    setTimeout(() => {
+                        tg.MainButton.hideProgress();
+                        webAppLog("MainButton.hideProgress() вызван.");
+                        tg.MainButton.setText("Данные отправлены!");
+                        webAppLog("MainButton текст изменен: 'Данные отправлены!'");
+                        // Оставим кнопку неактивной, чтобы показать что отправка была
+                        // tg.MainButton.enable(); // Если нужно разрешить повторную отправку
+
+                        // Очистить поле ввода после "успешной" отправки
+                        // dataField.value = "";
+                        // tg.MainButton.hide(); // Скрыть кнопку, т.к. поле пустое
+
+                    }, 1500);
+
+                } catch (e) {
+                    webAppLog("ОШИБКА при вызове tg.sendData(): " + e.toString());
+                    tg.showAlert("Произошла ошибка при отправке данных: " + e.toString());
+                    tg.MainButton.hideProgress();
+                    tg.MainButton.enable();
+                    webAppLog("MainButton.hideProgress() и enable() вызваны после ошибки.");
+                }
+            });
+        }
+        webAppLog("Инициализация скрипта Web App завершена.");
     </script>
 </body>
 </html>
